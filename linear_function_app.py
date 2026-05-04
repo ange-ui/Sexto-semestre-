@@ -106,7 +106,7 @@ class LinearApp(ctk.CTk):
 
         ctk.CTkLabel(
             header,
-            text="  📈  Generador de Funciones Lineales",
+            text="  Generador de Funciones Lineales",
             font=ctk.CTkFont("Courier New", 22, "bold"),
             text_color=COLORS["cyan"],
         ).pack(side="left", padx=20, pady=10)
