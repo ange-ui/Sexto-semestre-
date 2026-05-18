@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análisis Estadístico · Datos Biométricos</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --card: #1e1e1e;
+    --border: #2a2a2a;
+    --accent1: #e8ff47;
+    --accent2: #ff6b35;
+    --accent3: #47c9ff;
+    --accent4: #b47aff;
+    --text: #f0f0f0;
+    --muted: #888;
+    --amarillo: #f5c542;
+    --verde: #4caf7d;
+    --blanco: #e0e0e0;
+    --na: #888;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    padding: 80px 40px 60px;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(232,255,71,.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent1);
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(36px, 6vw, 80px);
+    font-weight: 700;
+    line-height: 1.05;
+    max-width: 800px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent1);
+  }
+  .hero p {
+    margin-top: 24px;
+    color: var(--muted);
+    max-width: 560px;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 40px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+  .hero-stat { border-left: 2px solid var(--accent1); padding-left: 16px; }
+  .hero-stat .num { font-size: 28px; font-weight: 700; }
+  .hero-stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── NAV TABS ── */
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    padding: 16px 24px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all .2s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent1); border-bottom-color: var(--accent1); }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 48px 40px; }
+  .section.active { display: block; }
+
+  /* ── DATA TABLE ── */
+  .data-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--card);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent1);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr:hover { background: var(--card); }
+  tbody td { padding: 10px 16px; font-size: 13px; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .tag-amarillo { background: rgba(245,197,66,.15); color: var(--amarillo); }
+  .tag-verde { background: rgba(76,175,125,.15); color: var(--verde); }
+  .tag-blanco { background: rgba(224,224,224,.12); color: var(--blanco); }
+  .tag-na { background: rgba(136,136,136,.15); color: var(--na); }
+
+  /* ── SECTION HEADERS ── */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .section-head h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 700;
+  }
+  .section-head .tag-head {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── FREQ TABLE ── */
+  .freq-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 40px;
+  }
+  .freq-table th {
+    background: var(--card);
+    padding: 10px 14px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent3);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .freq-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .freq-table tr:hover td { background: var(--card); }
+
+  /* ── CHART GRID ── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+  .chart-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+  }
+  .chart-box h3 {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .chart-box canvas { max-height: 300px; }
+
+  /* ── STAT CARDS ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent1);
+  }
+  .stat-card.blue::before { background: var(--accent3); }
+  .stat-card.orange::before { background: var(--accent2); }
+  .stat-card.purple::before { background: var(--accent4); }
+  .stat-card .lbl { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .stat-card .val { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 700; }
+  .stat-card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── VARIABLE SELECTOR ── */
+  .var-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .var-btn {
+    padding: 8px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all .2s;
+  }
+  .var-btn:hover { border-color: var(--accent1); color: var(--accent1); }
+  .var-btn.active { background: var(--accent1); color: #000; border-color: var(--accent1); }
+
+  /* ── ACUMULADA TABLE ── */
+  .acum-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .acum-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent1), var(--accent3));
+    border-radius: 3px;
+    transition: width .8s ease;
+  }
+
+  /* ── MEDIDAS ── */
+  .medidas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+  .medida-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+  }
+  .medida-card h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+  .medida-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: 13px;
+  }
+  .medida-row .k { color: var(--muted); }
+  .medida-row .v { font-weight: 700; color: var(--accent1); }
+  .medida-row .v.blue { color: var(--accent3); }
+  .medida-row .v.orange { color: var(--accent2); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .hero { padding: 48px 20px 40px; }
+    .section { padding: 32px 20px; }
+    .nav-tabs { gap: 0; }
+    .tab-btn { padding: 12px 14px; font-size: 10px; }
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section.active > * {
+    animation: fadeUp .4s ease both;
+  }
+  .section.active > *:nth-child(2) { animation-delay: .08s; }
+  .section.active > *:nth-child(3) { animation-delay: .16s; }
+  .section.active > *:nth-child(4) { animation-delay: .24s; }
+  .section.active > *:nth-child(5) { animation-delay: .32s; }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-label">Análisis Estadístico Descriptivo</div>
+  <h1>Datos<br><em>Biométricos</em><br>y de Velocidad</h1>
+  <p>Estudio estadístico completo de las variables Peso, Altura, Velocidad y Color. Incluye frecuencias absolutas, relativas, acumuladas, polígono de frecuencias y medidas de tendencia central.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">29</div><div class="lbl">Observaciones</div></div>
+    <div class="hero-stat"><div class="num">4</div><div class="lbl">Variables</div></div>
+    <div class="hero-stat"><div class="num">3</div><div class="lbl">Categorías color</div></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab('datos')">01 · DATOS</button>
+  <button class="tab-btn" onclick="showTab('absolutas')">02 · FREC. ABSOLUTAS</button>
+  <button class="tab-btn" onclick="showTab('relativas')">03 · FREC. RELATIVAS</button>
+  <button class="tab-btn" onclick="showTab('acumuladas')">04 · FREC. ACUMULADAS</button>
+  <button class="tab-btn" onclick="showTab('poligono')">05 · POLÍGONO</button>
+  <button class="tab-btn" onclick="showTab('medidas')">06 · MEDIA / MEDIANA / MODA</button>
+</nav>
+
+<!-- ═══════════════════════════════ SECCIÓN 1: DATOS ═══════════════════════════════ -->
+<section class="section active" id="datos">
+  <div class="section-head">
+    <h2>Tabla de Datos</h2>
+    <span class="tag-head">Dataset Completo</span>
+  </div>
+  <div class="data-wrapper">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>PESO (kg)</th>
+          <th>ALTURA (cm)</th>
+          <th>VELOCIDAD (km/h)</th>
+          <th>COLOR</th>
+        </tr>
+      </thead>
+      <tbody id="dataTbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECCIÓN 2: FREC ABSOLUTAS ═══════════════════════════════ -->
+<section class="section" id="absolutas">
+  <div class="section-head">
+    <h2>Frecuencias Absolutas</h2>
+    <span class="tag-head">Conteo por intervalos</span>
+  </div>
+
+  <div class="var-selector">
+    <button class="var-btn active" onclick="showAbsVar('peso')">Peso</button>
+    <button class="var-btn" onclick="showAbsVar('altura')">Altura</button>
+    <button class="var-btn" onclick="showAbsVar('velocidad')">Velocidad</button>
+    <button class="var-btn" onclick="showAbsVar('color')">Color</button>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column: 1/-1;">
+      <h3 id="absChartTitle">Frecuencia Absoluta — Peso</h3>
+      <canvas id="absChart"></canvas>
+    </div>
+  </div>
+
+  <div id="absTableContainer"></div>
+</section>
+
+<!-- ═══════════════════════════════ SECCIÓN 3: FREC RELATIVAS ═══════════════════════════════ -->
+<section class="section" id="relativas">
+  <div class="section-head">
+    <h2>Frecuencias Relativas</h2>
+    <span class="tag-head">Proporción por categoría / intervalo</span>
+  </div>
+
+  <div class="var-selector">
+    <button class="var-btn active" onclick="showRelVar('peso')">Peso</button>
+    <button class="var-btn" onclick="showRelVar('altura')">Altura</button>
+    <button class="var-btn" onclick="showRelVar('velocidad')">Velocidad</button>
+    <button class="var-btn" onclick="showRelVar('color')">Color</button>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-box">
+      <h3 id="relPieTitle">Diagrama de Pastel — Peso</h3>
+      <canvas id="relPieChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3 id="relPolarTitle">Diagrama Polar — Peso</h3>
+      <canvas id="relPolarChart"></canvas>
+    </div>
+  </div>
+  <div id="relTableContainer"></div>
+</section>
+
+<!-- ═══════════════════════════════ SECCIÓN 4: ACUMULADAS ═══════════════════════════════ -->
+<section class="section" id="acumuladas">
+  <div class="section-head">
+    <h2>Frecuencias Acumuladas</h2>
+    <span class="tag-head">Distribución Creciente</span>
+  </div>
+
+  <div class="var-selector">
+    <button class="var-btn active" onclick="showAcumVar('peso')">Peso</button>
+    <button class="var-btn" onclick="showAcumVar('altura')">Altura</button>
+    <button class="var-btn" onclick="showAcumVar('velocidad')">Velocidad</button>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column: 1/-1;">
+      <h3>Ojiva — Frecuencia Acumulada</h3>
+      <canvas id="acumChart"></canvas>
+    </div>
+  </div>
+
+  <div id="acumTableContainer"></div>
+</section>
+
+<!-- ═══════════════════════════════ SECCIÓN 5: POLÍGONO ═══════════════════════════════ -->
+<section class="section" id="poligono">
+  <div class="section-head">
+    <h2>Polígono de Frecuencias</h2>
+    <span class="tag-head">Distribución de frecuencias conectada</span>
+  </div>
+
+  <div class="var-selector">
+    <button class="var-btn active" onclick="showPolyVar('peso')">Peso</button>
+    <button class="var-btn" onclick="showPolyVar('altura')">Altura</button>
+    <button class="var-btn" onclick="showPolyVar('velocidad')">Velocidad</button>
+  </div>
+
+  <div class="chart-box">
+    <h3>Polígono de Frecuencias</h3>
+    <canvas id="polyChart" style="max-height:400px;"></canvas>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECCIÓN 6: MEDIDAS ═══════════════════════════════ -->
+<section class="section" id="medidas">
+  <div class="section-head">
+    <h2>Medidas de Tendencia Central</h2>
+    <span class="tag-head">Media · Mediana · Moda</span>
+  </div>
+
+  <div class="medidas-grid" id="medidasGrid"></div>
+
+  <div class="chart-box">
+    <h3>Comparativa — Media, Mediana, Moda por Variable</h3>
+    <canvas id="medidasChart" style="max-height:320px;"></canvas>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span>Análisis Estadístico · Datos Biométricos y Velocidad · n=29</span>
+  <span>Generado con Chart.js · 2026</span>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATASET
+// ═══════════════════════════════════════════════════════════════════
+const DATA = [
+  {peso:7.2,  altura:50, velocidad:10.3, color:'Blanco'},
+  {peso:8.5,  altura:66, velocidad:10.3, color:'Amarillo'},
+  {peso:9.8,  altura:73, velocidad:10.2, color:'Verde'},
+  {peso:6.5,  altura:72, velocidad:16.4, color:'Verde'},
+  {peso:7.5,  altura:81, velocidad:18.8, color:'Verde'},
+  {peso:10.1, altura:73, velocidad:19.7, color:'Verde'},
+  {peso:11.0, altura:66, velocidad:15.6, color:'Blanco'},
+  {peso:11.0, altura:75, velocidad:21.2, color:'Amarillo'},
+  {peso:11.1, altura:70, velocidad:22.6, color:'NA'},
+  {peso:11.2, altura:75, velocidad:19.9, color:'Blanco'},
+  {peso:11.3, altura:69, velocidad:24.2, color:'Amarillo'},
+  {peso:11.4, altura:76, velocidad:21.0, color:'Blanco'},
+  {peso:11.4, altura:76, velocidad:21.4, color:'Verde'},
+  {peso:11.7, altura:69, velocidad:21.3, color:'Verde'},
+  {peso:12.0, altura:75, velocidad:null, color:'Amarillo'},
+  {peso:12.9, altura:64, velocidad:22.2, color:'Amarillo'},
+  {peso:12.9, altura:55, velocidad:33.8, color:'Blanco'},
+  {peso:10.3, altura:76, velocidad:27.4, color:'Amarillo'},
+  {peso:9.7,  altura:71, velocidad:25.7, color:'Verde'},
+  {peso:10.8, altura:64, velocidad:24.9, color:'Verde'},
+  {peso:11.0, altura:78, velocidad:23.1, color:'Amarillo'},
+  {peso:10.2, altura:70, velocidad:31.7, color:'Amarillo'},
+  {peso:10.5, altura:74, velocidad:36.3, color:'Verde'},
+  {peso:6.5,  altura:72, velocidad:38.3, color:'Verde'},
+  {peso:6.3,  altura:77, velocidad:42.6, color:'Verde'},
+  {peso:7.3,  altura:51, velocidad:55.4, color:'Blanco'},
+  {peso:7.5,  altura:62, velocidad:null, color:'Blanco'},
+  {peso:7.9,  altura:60, velocidad:58.3, color:'Amarillo'},
+  {peso:8.2,  altura:70, velocidad:null, color:'Verde'},
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════
+const mean = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+const sorted = arr => [...arr].sort((a,b)=>a-b);
+function median(arr){
+  const s=sorted(arr), n=s.length;
+  return n%2===0?(s[n/2-1]+s[n/2])/2:s[Math.floor(n/2)];
+}
+function mode(arr){
+  const freq={};
+  arr.forEach(v=>{ freq[v]=(freq[v]||0)+1; });
+  const maxF=Math.max(...Object.values(freq));
+  return Object.entries(freq).filter(([,v])=>v===maxF).map(([k])=>+k);
+}
+
+function buildIntervals(arr, k){
+  const mn=Math.min(...arr), mx=Math.max(...arr);
+  const w=(mx-mn)/k;
+  const intervals=[];
+  for(let i=0;i<k;i++){
+    const lo=mn+i*w, hi=i===k-1?mx+.001:mn+(i+1)*w;
+    intervals.push({lo,hi,label:`[${lo.toFixed(1)}, ${hi.toFixed(1)})`});
+  }
+  return intervals;
+}
+
+function countIntervals(arr, intervals){
+  return intervals.map(({lo,hi})=>arr.filter(v=>v>=lo&&v<hi).length);
+}
+
+function sturgess(n){ return Math.ceil(1+3.322*Math.log10(n)); }
+
+// ═══════════════════════════════════════════════════════════════════
+// PREPARED VARIABLES
+// ═══════════════════════════════════════════════════════════════════
+const peso = DATA.map(d=>d.peso);
+const altura = DATA.map(d=>d.altura);
+const velocidad = DATA.map(d=>d.velocidad).filter(v=>v!==null);
+const colors = DATA.map(d=>d.color);
+
+const vars = {
+  peso: { data: peso, label: 'Peso (kg)' },
+  altura: { data: altura, label: 'Altura (cm)' },
+  velocidad: { data: velocidad, label: 'Velocidad (km/h)' },
+};
+
+function getFreqs(varName){
+  if(varName==='color'){
+    const cats=['Amarillo','Verde','Blanco','NA'];
+    const counts=cats.map(c=>colors.filter(x=>x===c).length);
+    return { labels:cats, counts, n: colors.length };
+  }
+  const arr=vars[varName].data;
+  const k=sturgess(arr.length);
+  const intervals=buildIntervals(arr,k);
+  const counts=countIntervals(arr,intervals);
+  return { labels:intervals.map(i=>i.label), counts, n:arr.length, midpoints:intervals.map(i=>(i.lo+i.hi)/2) };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CHART INSTANCES
+// ═══════════════════════════════════════════════════════════════════
+let absChart, relPieChart, relPolarChart, acumChart, polyChart, medidasChart;
+
+const PALETTE = ['#e8ff47','#47c9ff','#ff6b35','#b47aff','#4caf7d','#f5c542'];
+const PIE_COLORS = {
+  Amarillo: '#f5c542', Verde: '#4caf7d', Blanco: '#e0e0e0', NA: '#888',
+  default: PALETTE
+};
+
+function chartColors(labels, isColor=false){
+  if(isColor) return labels.map(l=>PIE_COLORS[l]||'#888');
+  return PALETTE.slice(0,labels.length);
+}
+
+const CHART_DEFAULTS = {
+  plugins:{legend:{labels:{color:'#aaa',font:{family:'Space Mono',size:11}}}},
+  scales:{
+    x:{ticks:{color:'#888',font:{family:'Space Mono',size:10}},grid:{color:'rgba(255,255,255,.05)'}},
+    y:{ticks:{color:'#888',font:{family:'Space Mono',size:10}},grid:{color:'rgba(255,255,255,.06)'}}
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA TABLE
+// ═══════════════════════════════════════════════════════════════════
+(function buildDataTable(){
+  const tbody=document.getElementById('dataTbody');
+  DATA.forEach((row,i)=>{
+    const cls = row.color==='Amarillo'?'tag-amarillo':row.color==='Verde'?'tag-verde':row.color==='Blanco'?'tag-blanco':'tag-na';
+    tbody.innerHTML+=`<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td>${row.peso}</td>
+      <td>${row.altura}</td>
+      <td>${row.velocidad??'<span style="color:var(--muted)">NA</span>'}</td>
+      <td><span class="tag ${cls}">${row.color}</span></td>
+    </tr>`;
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════
+function showTab(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  if(id==='absolutas') initAbsolutas();
+  if(id==='relativas') initRelativas();
+  if(id==='acumuladas') initAcumuladas();
+  if(id==='poligono') initPoligono();
+  if(id==='medidas') initMedidas();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECCIÓN 2: FRECUENCIAS ABSOLUTAS
+// ═══════════════════════════════════════════════════════════════════
+let absVar='peso';
+function initAbsolutas(){ showAbsVar(absVar); }
+
+function showAbsVar(v){
+  absVar=v;
+  document.querySelectorAll('#absolutas .var-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase()===v));
+  const f=getFreqs(v);
+  const isColor=v==='color';
+  const colors2=chartColors(f.labels,isColor);
+
+  document.getElementById('absChartTitle').textContent=`Frecuencia Absoluta — ${vars[v]?.label||'Color'}`;
+
+  if(absChart) absChart.destroy();
+  absChart=new Chart(document.getElementById('absChart'),{
+    type:'bar',
+    data:{
+      labels:f.labels,
+      datasets:[{
+        label:'Frecuencia Absoluta',
+        data:f.counts,
+        backgroundColor:colors2.map(c=>c+'99'),
+        borderColor:colors2,
+        borderWidth:2,
+        borderRadius:3,
+      }]
+    },
+    options:{
+      ...CHART_DEFAULTS,
+      plugins:{...CHART_DEFAULTS.plugins,legend:{display:false}},
+      animation:{duration:600},
+    }
+  });
+
+  // Table
+  let html=`<table class="freq-table"><thead><tr><th>Intervalo / Categoría</th><th>Frec. Absoluta (fi)</th><th>Visualización</th></tr></thead><tbody>`;
+  const total=f.counts.reduce((a,b)=>a+b,0);
+  f.labels.forEach((lbl,i)=>{
+    const pct=Math.round(f.counts[i]/total*100);
+    html+=`<tr><td>${lbl}</td><td><strong>${f.counts[i]}</strong></td><td>
+      <div style="background:var(--border);border-radius:2px;height:8px;width:100%">
+        <div style="background:${colors2[i%colors2.length]};height:8px;border-radius:2px;width:${pct}%;transition:width .6s ease"></div>
+      </div></td></tr>`;
+  });
+  html+=`<tr style="font-weight:700"><td>TOTAL</td><td>${total}</td><td></td></tr></tbody></table>`;
+  document.getElementById('absTableContainer').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECCIÓN 3: FRECUENCIAS RELATIVAS
+// ═══════════════════════════════════════════════════════════════════
+let relVar='peso';
+function initRelativas(){ showRelVar(relVar); }
+
+function showRelVar(v){
+  relVar=v;
+  document.querySelectorAll('#relativas .var-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase()===v));
+  const f=getFreqs(v);
+  const isColor=v==='color';
+  const colors2=chartColors(f.labels,isColor);
+  const total=f.counts.reduce((a,b)=>a+b,0);
+  const relativas=f.counts.map(c=>+(c/total*100).toFixed(2));
+
+  document.getElementById('relPieTitle').textContent=`Diagrama Pastel — ${vars[v]?.label||'Color'}`;
+  document.getElementById('relPolarTitle').textContent=`Diagrama Polar — ${vars[v]?.label||'Color'}`;
+
+  if(relPieChart) relPieChart.destroy();
+  relPieChart=new Chart(document.getElementById('relPieChart'),{
+    type:'pie',
+    data:{labels:f.labels,datasets:[{data:relativas,backgroundColor:colors2.map(c=>c+'cc'),borderColor:colors2,borderWidth:2}]},
+    options:{plugins:{legend:{labels:{color:'#aaa',font:{family:'Space Mono',size:10}}}},animation:{duration:700}}
+  });
+
+  if(relPolarChart) relPolarChart.destroy();
+  relPolarChart=new Chart(document.getElementById('relPolarChart'),{
+    type:'polarArea',
+    data:{labels:f.labels,datasets:[{data:relativas,backgroundColor:colors2.map(c=>c+'99'),borderColor:colors2,borderWidth:2}]},
+    options:{plugins:{legend:{labels:{color:'#aaa',font:{family:'Space Mono',size:10}}}},scales:{r:{ticks:{color:'#888'}}},animation:{duration:700}}
+  });
+
+  let html=`<table class="freq-table"><thead><tr><th>Intervalo / Categoría</th><th>fi</th><th>fri (%)</th><th>fri (decimal)</th></tr></thead><tbody>`;
+  f.labels.forEach((lbl,i)=>{
+    html+=`<tr><td>${lbl}</td><td>${f.counts[i]}</td><td><strong>${relativas[i]}%</strong></td><td>${(relativas[i]/100).toFixed(4)}</td></tr>`;
+  });
+  html+=`<tr style="font-weight:700"><td>TOTAL</td><td>${total}</td><td>100%</td><td>1.0000</td></tr></tbody></table>`;
+  document.getElementById('relTableContainer').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECCIÓN 4: FRECUENCIAS ACUMULADAS
+// ═══════════════════════════════════════════════════════════════════
+let acumVar='peso';
+function initAcumuladas(){ showAcumVar(acumVar); }
+
+function showAcumVar(v){
+  acumVar=v;
+  document.querySelectorAll('#acumuladas .var-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase()===v));
+  const f=getFreqs(v);
+  const total=f.counts.reduce((a,b)=>a+b,0);
+  let acc=0;
+  const acum=f.counts.map(c=>{ acc+=c; return acc; });
+  const acumRel=acum.map(a=>+(a/total*100).toFixed(2));
+
+  if(acumChart) acumChart.destroy();
+  acumChart=new Chart(document.getElementById('acumChart'),{
+    type:'line',
+    data:{
+      labels:f.labels,
+      datasets:[
+        {label:'Fi (acumulada absoluta)',data:acum,borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',tension:.35,fill:true,pointRadius:5,pointBackgroundColor:'#e8ff47'},
+        {label:'fri% (acumulada relativa)',data:acumRel,borderColor:'#47c9ff',backgroundColor:'rgba(71,201,255,.06)',tension:.35,fill:false,pointRadius:5,pointBackgroundColor:'#47c9ff',yAxisID:'y2'}
+      ]
+    },
+    options:{
+      ...CHART_DEFAULTS,
+      animation:{duration:700},
+      scales:{
+        ...CHART_DEFAULTS.scales,
+        y2:{position:'right',ticks:{color:'#47c9ff',font:{family:'Space Mono',size:10}},grid:{drawOnChartArea:false}}
+      }
+    }
+  });
+
+  acc=0;
+  let html=`<table class="freq-table"><thead><tr><th>Intervalo</th><th>fi</th><th>Fi (acum)</th><th>fri%</th><th>Fri% (acum)</th><th>Progreso</th></tr></thead><tbody>`;
+  let accR=0;
+  f.labels.forEach((lbl,i)=>{
+    const fri=+(f.counts[i]/total*100).toFixed(2);
+    accR+=fri; acc+=f.counts[i];
+    html+=`<tr><td>${lbl}</td><td>${f.counts[i]}</td><td><strong>${acc}</strong></td><td>${fri}%</td><td><strong>${accR.toFixed(2)}%</strong></td>
+      <td style="min-width:100px"><div class="acum-bar"><div class="acum-fill" style="width:${accR}%"></div></div></td></tr>`;
+  });
+  html+=`</tbody></table>`;
+  document.getElementById('acumTableContainer').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECCIÓN 5: POLÍGONO DE FRECUENCIAS
+// ═══════════════════════════════════════════════════════════════════
+let polyVar='peso';
+function initPoligono(){ showPolyVar(polyVar); }
+
+function showPolyVar(v){
+  polyVar=v;
+  document.querySelectorAll('#poligono .var-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase()===v));
+  const f=getFreqs(v);
+  const mids=f.midpoints||f.labels.map((_,i)=>i);
+
+  if(polyChart) polyChart.destroy();
+  polyChart=new Chart(document.getElementById('polyChart'),{
+    type:'line',
+    data:{
+      labels:f.labels,
+      datasets:[
+        {label:'Frecuencia Absoluta',data:f.counts,borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.1)',tension:.3,fill:true,pointRadius:6,pointBackgroundColor:'#e8ff47',pointBorderColor:'#0d0d0d',pointBorderWidth:2},
+      ]
+    },
+    options:{
+      ...CHART_DEFAULTS,
+      animation:{duration:700},
+      plugins:{
+        ...CHART_DEFAULTS.plugins,
+        tooltip:{callbacks:{label:ctx=>`fi = ${ctx.parsed.y}`}}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECCIÓN 6: MEDIDAS DE TENDENCIA CENTRAL
+// ═══════════════════════════════════════════════════════════════════
+function initMedidas(){
+  const results={
+    peso: compute(peso, 'Peso (kg)'),
+    altura: compute(altura, 'Altura (cm)'),
+    velocidad: compute(velocidad, 'Velocidad (km/h)'),
+  };
+
+  // Color mode
+  const colorFreq={};
+  colors.forEach(c=>{ colorFreq[c]=(colorFreq[c]||0)+1; });
+  const maxColorF=Math.max(...Object.values(colorFreq));
+  const colorMode=Object.entries(colorFreq).filter(([,v])=>v===maxColorF).map(([k])=>k).join(', ');
+
+  const grid=document.getElementById('medidasGrid');
+  grid.innerHTML='';
+
+  const accents=['','blue','orange'];
+  Object.entries(results).forEach(([k,r],idx)=>{
+    const a=accents[idx];
+    grid.innerHTML+=`
+    <div class="medida-card">
+      <h3>${r.label}</h3>
+      <div class="medida-row"><span class="k">N (válidos)</span><span class="v ${a}">${r.n}</span></div>
+      <div class="medida-row"><span class="k">Media (x̄)</span><span class="v ${a}">${r.mean}</span></div>
+      <div class="medida-row"><span class="k">Mediana</span><span class="v ${a}">${r.median}</span></div>
+      <div class="medida-row"><span class="k">Moda</span><span class="v ${a}">${r.mode}</span></div>
+      <div class="medida-row"><span class="k">Mín.</span><span class="v ${a}">${r.min}</span></div>
+      <div class="medida-row"><span class="k">Máx.</span><span class="v ${a}">${r.max}</span></div>
+      <div class="medida-row"><span class="k">Rango</span><span class="v ${a}">${r.range}</span></div>
+    </div>`;
+  });
+  // Color card
+  grid.innerHTML+=`
+  <div class="medida-card" style="border-top:2px solid var(--accent4)">
+    <h3>Color</h3>
+    <div class="medida-row"><span class="k">N observaciones</span><span class="v" style="color:var(--accent4)">${colors.length}</span></div>
+    ${Object.entries(colorFreq).map(([c,f])=>`<div class="medida-row"><span class="k">${c}</span><span class="v" style="color:var(--accent4)">${f} (${(f/colors.length*100).toFixed(1)}%)</span></div>`).join('')}
+    <div class="medida-row"><span class="k">Moda</span><span class="v" style="color:var(--accent4)">${colorMode}</span></div>
+  </div>`;
+
+  // Comparison chart
+  const labels=['Peso','Altura','Velocidad'];
+  const means=Object.values(results).map(r=>+r.mean);
+  const medians=Object.values(results).map(r=>+r.median);
+  const modes=Object.values(results).map(r=>+r.modeRaw[0]);
+
+  if(medidasChart) medidasChart.destroy();
+  medidasChart=new Chart(document.getElementById('medidasChart'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Media',data:means,backgroundColor:'rgba(232,255,71,.7)',borderColor:'#e8ff47',borderWidth:2,borderRadius:3},
+        {label:'Mediana',data:medians,backgroundColor:'rgba(71,201,255,.7)',borderColor:'#47c9ff',borderWidth:2,borderRadius:3},
+        {label:'Moda',data:modes,backgroundColor:'rgba(255,107,53,.7)',borderColor:'#ff6b35',borderWidth:2,borderRadius:3},
+      ]
+    },
+    options:{...CHART_DEFAULTS,animation:{duration:700}}
+  });
+}
+
+function compute(arr, label){
+  const s=sorted(arr), mn=s[0], mx=s[s.length-1];
+  const m=mode(arr);
+  return {
+    label,
+    n:arr.length,
+    mean:mean(arr).toFixed(2),
+    median:median(arr).toFixed(2),
+    mode:m.join(', '),
+    modeRaw:m,
+    min:mn.toFixed(2),
+    max:mx.toFixed(2),
+    range:(mx-mn).toFixed(2)
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+// Pre-init first visible tab
+initAbsolutas();
+</script>
+</body>
+</html>
